@@ -62,6 +62,7 @@ class MainController extends Controller
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             shell_exec("./tools/tar/bsdtar.exe -x -f \"./storage/plugins/{$folder_name}/{$filtered_file_name}\" -C \"{$files_path}\"");
         } else {
+            return "test";
             shell_exec("tar -x -f \"./storage/plugins/{$folder_name}/{$filtered_file_name}\" -C \"{$files_path}\"");
         }
         
