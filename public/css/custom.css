@@ -1,0 +1,9 @@
+.head_2{
+    border: 2px solid gray;
+    padding-left: 25px;
+    line-height: 1.8;
+    background-color: gray;
+    border-radius: 29px;
+    color: white;
+    box-shadow: 3px 3px 3px black;
+}
