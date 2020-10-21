@@ -55,7 +55,7 @@ class MainController extends Controller
         
         $file_path = $file->storeAs("public/plugins/{$folder_name}/", $filtered_file_name);
         
-        $files_path = public_path() . "\\storage\\plugins\\{$folder_name}\\files";
+        $files_path = public_path() . "/storage/plugins/{$folder_name}/files/";
         
         File::makeDirectory($files_path);
 
@@ -65,7 +65,7 @@ class MainController extends Controller
             return shell_exec("tar -x -f \"./storage/plugins/{$folder_name}/{$filtered_file_name}\" -C \"{$files_path}\"");
         }
         
-        File::delete(public_path() . "\\storage\\plugins\\{$folder_name}\\$filtered_file_name");
+        File::delete(public_path() . "/storage/plugins/{$folder_name}/$filtered_file_name");
         
         $files_toml = array();
         
@@ -103,7 +103,7 @@ class MainController extends Controller
         
         $server_toml = MainController::generateServerTOML($folder_name, $display_name, $version, $files_toml);
         
-        $server_toml_path = public_path() . "\\storage\\plugins\\{$folder_name}\\plugin.toml";
+        $server_toml_path = public_path() . "/storage/plugins/{$folder_name}/plugin.toml";
         
         file_put_contents($server_toml_path, $server_toml);
 
@@ -184,7 +184,7 @@ class MainController extends Controller
         // remove illegal file system characters https://en.wikipedia.org/wiki/Filename#Reserved_characters_and_words
         $name = str_replace(array_merge(
             array_map('chr', range(0, 31)),
-            array('<', '>', ':', '"', '/', '\\', '|', '?', '*')
+            array('<', '>', ':', '"', '/', '/', '|', '?', '*')
         ), '', $name);
         // maximise filename length to 255 bytes http://serverfault.com/a/9548/44086
         $ext = pathinfo($name, PATHINFO_EXTENSION);
