@@ -133,7 +133,7 @@ class MainController extends Controller
     public function ownedItems(){
         $owner_id = Auth::id();
 
-        $owned_items = Items::find($owner_id, "owner_id")->get();
+        $owned_items = Items::where("owner_id", '=',  $owner_id)->get();
 
         return view("welcome")->with('items', $owned_items);
     }
