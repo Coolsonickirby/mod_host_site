@@ -14,21 +14,39 @@ class MainController extends Controller
 {
 
     public function showItems(){
-        $items = Items::all();
+        $items = Items::where("visibility", "=", "public")->get();
 
         return view("welcome")->with("items", $items);
     }
 
     public function showItem($id){
-        $item = Items::where("id", '=', $id)->get();
+        $item = Items::where("id", '=', $id)->get()[0];
 
-        return view("item")->with("item", $item[0]);
+        if($item->visibility != "private")
+            return view("item")->with("item", $item);
+        else{
+            if($item->owner_id == Auth::id())
+                return view("item")->with("item", $item);
+            else{
+                return redirect()->back();   
+            }
+        }    
+    }
+
+    public function editItem($id){
+        $item = Items::where("id", '=', $id)->get()[0];
+
+        if($item->owner_id == Auth::id())
+            return view("upload")->with('item', $item);
+        else
+            return redirect()->back();    
     }
 
     public function SubmitItem(Request $request){
 
         $request->validate([
             'type' => 'required|in:mod,skyline_plugin',
+            'visibility' => 'required|in:public,unlisted,private',
             'name' => 'required|max:50',
             'file' => 'required',
             'semver' => 'required|min:5',
@@ -38,9 +56,149 @@ class MainController extends Controller
 
         return MainController::saveItem($request);
     }
+    
+    public function updateItem(Request $request, $id){
+        $request->validate([
+            'type' => 'required|in:mod,skyline_plugin',
+            'visibility' => 'required|in:public,unlisted,private',
+            'name' => 'required|max:50',
+            'semver' => 'required|min:5',
+            'images.*' => 'image|mimes:jpeg,png,jpg',
+        ]);
+
+        $owner_id = Auth::id();
+
+        $item = Items::where("id", "=", $id)->get()[0];
+
+        if($item->owner_id != $owner_id){
+            return redirect("/item/{$id}");
+        }
+
+        $display_name = $request->input("name");
+
+        $folder_name = MainController::filter_filename($request->input("name")) . " - {$owner_id}";
+
+        if($item->folder_name != $folder_name){
+            rename(public_path() . "/storage/plugins/{$item->folder_name}", public_path() . "/storage/plugins/{$folder_name}");
+            $item->folder_name = $folder_name;
+        }
+
+        $version = $request->input("semver");
+
+        $file = $request->file('file');
+        
+        $files_path = public_path() . "/storage/plugins/{$folder_name}/files/";
+
+        if (!File::exists($files_path)) {
+            File::makeDirectory($files_path);
+        }
+
+        if ($request->hasFile('file')) {
+            $filtered_file_name = MainController::filter_filename($request->file('file')->getClientOriginalName());
+    
+            $file_path = $file->storeAs("public/plugins/{$folder_name}/", $filtered_file_name);
+    
+            if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+                shell_exec("%CD%/tools/tar/bsdtar.exe -x -f \"%CD%/storage/plugins/{$folder_name}/{$filtered_file_name}\" -C \"{$files_path}\"");
+            } else {
+                shell_exec("unzip \"./storage/plugins/{$folder_name}/{$filtered_file_name}\" -d \"{$files_path}\"");
+            }
+    
+            File::delete(public_path() . "/storage/plugins/{$folder_name}/$filtered_file_name");
+        }
+
+        $files_toml = array();
+
+        $di = new \RecursiveDirectoryIterator($files_path);
+        foreach (new \RecursiveIteratorIterator($di) as $filename => $file) {
+            if (!str_contains($filename, "\.")) {
+                $path = str_replace("\\", "/", substr($filename, strlen($files_path) + 1));
+
+                $server_path = "files/{$path}";
+
+                if ($request->input("type") == "mod") {
+                    array_push($files_toml, array(
+                        "sd:/ultimate/mods/{$folder_name}/{$path}",
+                        "files/{$path}"
+                    ));
+                } else if ($request->input("type") == "skyline_plugin") {
+                    array_push($files_toml, array(
+                        "sd:/atmosphere/contents/01006A800016E000/romfs/skyline/plugins/{$path}",
+                        "files/{$path}"
+                    ));
+                }
+            }
+        }
+
+        $image_names = array();
+
+        $old_items = array();
+
+        if (!empty($request->input('old_images'))) {
+            foreach ($request->input('old_images') as $image) {
+                array_push($old_items, $image);
+            }
+
+            $images_path = public_path() . "/storage/plugins/{$item->folder_name}/images/";
+            $di = new \RecursiveDirectoryIterator($images_path);
+            foreach (new \RecursiveIteratorIterator($di) as $filename => $file) {
+                if (!str_contains($filename, "\.")) {
+                    $input_file_string = \basename(str_replace("\\", "/", $file));
+                    if(!in_array($input_file_string, $old_items)){
+                        File::delete($filename);
+                    }else{
+                        $image_location = "storage/plugins/{$folder_name}/images/{$input_file_string}";
+                        array_push($image_names, $image_location);
+                    }
+                }
+            }
+
+        }
+
+        if ($request->file('images')) {
+            foreach ($request->file('images') as $image) {
+                $image->store("public/plugins/{$folder_name}/images");
+                $image_location = "storage/plugins/{$folder_name}/images/{$image->hashName()}";
+                array_push($image_names, $image_location);
+            }
+        }
+
+
+        $server_toml = MainController::generateServerTOML($folder_name, $display_name, $version, $files_toml);
+
+        $server_toml_path = public_path() . "/storage/plugins/{$folder_name}/plugin.toml";
+
+        file_put_contents($server_toml_path, $server_toml);
+
+
+        #region Save Item
+        $item->type = $request->input("type");
+        
+        $item->visibility = $request->input("visibility");
+        
+        $item->name = $display_name;
+
+        $item->folder_name = $folder_name;
+
+        $item->description = $request->input("description");
+
+        $item->version = $version;
+
+        $item->images = serialize($image_names);
+
+        $item->owner_id = $owner_id;
+
+        $item->visibility = $request->input('visibility');
+
+        $item->save();
+        #endregion
+
+        return redirect('/');
+    }
 
     public static function saveItem(Request $request){
         
+        #region Handle Request
         $owner_id = Auth::id();
 
         $display_name = $request->input("name");
@@ -56,11 +214,13 @@ class MainController extends Controller
         $file_path = $file->storeAs("public/plugins/{$folder_name}/", $filtered_file_name);
         
         $files_path = public_path() . "/storage/plugins/{$folder_name}/files/";
-        
-        File::makeDirectory($files_path);
+
+        if (!File::exists($files_path)) {
+            File::makeDirectory($files_path);
+        };
 
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-            shell_exec("./tools/tar/bsdtar.exe -x -f \"./storage/plugins/{$folder_name}/{$filtered_file_name}\" -C \"{$files_path}\"");
+            shell_exec("%CD%/tools/tar/bsdtar.exe -x -f \"%CD%/storage/plugins/{$folder_name}/{$filtered_file_name}\" -C \"{$files_path}\"");
         } else {
             shell_exec("unzip \"./storage/plugins/{$folder_name}/{$filtered_file_name}\" -d \"{$files_path}\"");
         }
@@ -106,12 +266,14 @@ class MainController extends Controller
         $server_toml_path = public_path() . "/storage/plugins/{$folder_name}/plugin.toml";
         
         file_put_contents($server_toml_path, $server_toml);
+        #endregion
 
-        // return "<h3>Server TOML</h3><pre>" . $server_toml . "</pre><h3>User TOML</h3><pre>" . MainController::generateUserTOML($id) . "</pre>";
-
+        #region Save Item
         $item = new Items();
 
         $item->type = $request->input("type");
+
+        $item->visibility = $request->input("visibility");
 
         $item->name = $display_name;
 
@@ -124,8 +286,11 @@ class MainController extends Controller
         $item->images = serialize($image_names);
 
         $item->owner_id = $owner_id;
+        
+        $item->visibility = $request->input('visibility');
 
         $item->save();
+        #endregion
 
         return redirect("/");
     }
@@ -133,7 +298,7 @@ class MainController extends Controller
     public function ownedItems(){
         $owner_id = Auth::id();
 
-        $owned_items = Items::where("owner_id", '=',  $owner_id)->get();
+        $owned_items = Items::where("owner_id", '=',  $owner_id)->orderBy('updated_at', 'desc')->get();
 
         return view("welcome")->with('items', $owned_items);
     }
@@ -141,10 +306,6 @@ class MainController extends Controller
     public function logout(){
         Auth::logout();
         return redirect('/');
-    }
-
-    public static function savePlugin(Request $request){
-
     }
 
     public static function generateServerTOML($folder_name, $display_name, $version, $files){        

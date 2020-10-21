@@ -29,4 +29,8 @@ Route::middleware(['auth:sanctum', 'verified'])->get('/upload', function () {
     return view('upload');
 })->name('upload');
 
-Route::post('/upload/submit', [MainController::class, 'SubmitItem']);
+Route::middleware(['auth:sanctum', 'verified'])->get('/edit/{id}', [MainController::class, "editItem"])->name('upload');
+
+Route::middleware(['auth:sanctum', 'verified'])->post('/upload/submit', [MainController::class, 'SubmitItem']);
+
+Route::middleware(['auth:sanctum', 'verified'])->post('/edit/submit/{id}', [MainController::class, 'updateItem']);

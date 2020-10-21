@@ -16,6 +16,7 @@ class CreateItemsTable extends Migration
         Schema::create('items', function (Blueprint $table) {
             $table->id();
             $table->text('type');
+            $table->text('visibility');
             $table->text('name');
             $table->text('folder_name');
             $table->mediumText('description')->nullable();
