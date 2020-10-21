@@ -53,6 +53,12 @@ class MainController extends Controller
             'images.*' => 'image|mimes:jpeg,png,jpg',
         ]);
 
+        $items = Items::where("owner_id", "=", Auth::id())->get();
+
+        foreach($items as $item){
+            if($item->name == $request->input("name"))
+                return redirect()->back();
+        }
 
         return MainController::saveItem($request);
     }
