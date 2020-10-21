@@ -62,7 +62,7 @@ class MainController extends Controller
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             shell_exec("./tools/tar/bsdtar.exe -x -f \"./storage/plugins/{$folder_name}/{$filtered_file_name}\" -C \"{$files_path}\"");
         } else {
-            return shell_exec("echo tar -x -f \"./storage/plugins/{$folder_name}/{$filtered_file_name}\" -C \"{$files_path}\"");
+            return shell_exec("echo unzip \"./storage/plugins/{$folder_name}/{$filtered_file_name}\" -d \"{$files_path}\"");
         }
         
         File::delete(public_path() . "/storage/plugins/{$folder_name}/$filtered_file_name");
