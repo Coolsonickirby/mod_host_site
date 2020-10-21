@@ -72,6 +72,13 @@ class MainController extends Controller
             'images.*' => 'image|mimes:jpeg,png,jpg',
         ]);
 
+        $items = Items::where("owner_id", "=", Auth::id())->get();
+
+        foreach ($items as $item) {
+            if ($item->name == $request->input("name"))
+                return redirect()->back();
+        }
+
         $owner_id = Auth::id();
 
         $item = Items::where("id", "=", $id)->get()[0];
@@ -200,6 +207,18 @@ class MainController extends Controller
         #endregion
 
         return redirect('/');
+    }
+
+    public function deleteItem($id){
+        $owner_id = Auth::id();
+
+        $item = Items::where("id", "=", $id)->get()[0];
+
+        if($item->owner_id == $owner_id){
+            $item->delete();
+            return redirect("/dashboard");
+        }else
+            return redirect("/");
     }
 
     public static function saveItem(Request $request){

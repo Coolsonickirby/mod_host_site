@@ -24,6 +24,7 @@ class CreateItemsTable extends Migration
             $table->text('images')->nullable();
             $table->integer('owner_id');
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

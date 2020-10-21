@@ -26,6 +26,7 @@
     <h4 class="text-danger">{{$message}}</h4>
     <br>
 @enderror
+
 <form id="main_form" action="{{ isset($item->id) ? url("/edit/submit/$item->id") : url('/upload/submit') }}" method="POST" enctype="multipart/form-data">
     @csrf
     <h2 class="head_2">{{ isset($item->name) ? 'Edit ' . $item->name : 'Upload' }}</h2>
@@ -82,7 +83,10 @@
     <br>
     <div id="input-images"></div>
     <br>
-    <button class="btn btn-primary" type="button" id="submit_form">Submit!</button>
+    <button class="btn btn-info" type="button" id="submit_form">Submit!</button>
+    @if(isset($item))
+        <button class="btn btn-danger" type="button" id="delete">Delete!</button>
+    @endif
 </form>
 
 <script>
@@ -109,6 +113,13 @@
         mimes: ['image/jpeg', 'image/png']
     });
 
+    @if(isset($item))
+        document.getElementById("delete").addEventListener("click", function(){
+            if(confirm("Are you sure you want to delete this mod?")){
+                window.location.replace("{{url("/delete/{$item->id}")}}");
+            }
+        });
+    @endif
     document.getElementById("submit_form").addEventListener("click", function(){
         var failed = false;
         var one_radio_type_checked = false;

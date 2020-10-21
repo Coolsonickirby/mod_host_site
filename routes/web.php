@@ -34,3 +34,5 @@ Route::middleware(['auth:sanctum', 'verified'])->get('/edit/{id}', [MainControll
 Route::middleware(['auth:sanctum', 'verified'])->post('/upload/submit', [MainController::class, 'SubmitItem']);
 
 Route::middleware(['auth:sanctum', 'verified'])->post('/edit/submit/{id}', [MainController::class, 'updateItem']);
+
+Route::middleware(['auth:sanctum', 'verified'])->get('/delete/{id}', [MainController::class, 'deleteItem']);
