@@ -20,7 +20,7 @@ class MainController extends Controller
     }
 
     public function showItem($id){
-        $item = Items::find($id, "id")->get();
+        $item = Items::where("id", '=', $id)->get();
 
         return view("item")->with("item", $item[0]);
     }
@@ -168,7 +168,7 @@ class MainController extends Controller
     }
     
     public static function generateUserTOML($id){
-        $item = Items::find($id, "id")->get()[0];
+        $item = Items::where("id", '=', $id)->get()[0];
         
         $tb = new TomlBuilder();
 
