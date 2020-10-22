@@ -73,15 +73,16 @@ class MainController extends Controller
         ]);
 
         $items = Items::where("owner_id", "=", Auth::id())->get();
+        $item = Items::where("id", "=", $id)->get()[0];
 
-        foreach ($items as $item) {
+        foreach ($items as $item_from_collection) {
             if ($item->name == $request->input("name"))
-                return redirect()->back();
+                if($item_from_collection->id != $item->id )
+                    return redirect()->back();
         }
 
         $owner_id = Auth::id();
 
-        $item = Items::where("id", "=", $id)->get()[0];
 
         if($item->owner_id != $owner_id){
             return redirect("/item/{$id}");
