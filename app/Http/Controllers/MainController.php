@@ -113,7 +113,8 @@ class MainController extends Controller
     
             $file_path = $file->storeAs("public/plugins/{$folder_name}/", $filtered_file_name);
 
-            Storage::cleanDirectory($files_path);
+            $file = new Filesystem;
+            $file->cleanDirectory($files_path);
     
             if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
                 shell_exec("%CD%/tools/tar/bsdtar.exe -x -f \"%CD%/storage/plugins/{$folder_name}/{$filtered_file_name}\" -C \"{$files_path}\"");
