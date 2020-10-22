@@ -124,8 +124,8 @@ class MainController extends Controller
 
         $di = new \RecursiveDirectoryIterator($files_path);
         foreach (new \RecursiveIteratorIterator($di) as $filename => $file) {
-            if (!str_contains($filename, "\.")) {
-                $path = str_replace("\\", "/", substr($filename, strlen($files_path) + 1));
+            if (!str_contains($filename, "\.") && !str_contains($filename, "/.") && $filename != $files_path) {
+                $path = str_replace("\\", "/", substr($filename, strlen($files_path)));
 
                 $server_path = "files/{$path}";
 
@@ -256,8 +256,8 @@ class MainController extends Controller
         
         $di = new \RecursiveDirectoryIterator($files_path);
         foreach (new \RecursiveIteratorIterator($di) as $filename => $file) {
-            if(!str_contains($filename, "\.")){
-                $path = str_replace("\\", "/", substr($filename, strlen($files_path) + 1));
+            if(!str_contains($filename, "\.") && !str_contains($filename, "/.") && $filename != $files_path){
+                $path = str_replace("\\", "/", substr($filename, strlen($files_path)));
                                 
                 $server_path = "files/{$path}";
 
