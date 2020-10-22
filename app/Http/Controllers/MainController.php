@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Yosymfony\Toml\TomlBuilder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redis;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Storage;
 
 class MainController extends Controller
@@ -111,6 +112,9 @@ class MainController extends Controller
             $filtered_file_name = MainController::filter_filename($request->file('file')->getClientOriginalName());
     
             $file_path = $file->storeAs("public/plugins/{$folder_name}/", $filtered_file_name);
+
+            $file = new Filesystem;
+            $file->cleanDirectory($files_path);
     
             if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
                 shell_exec("%CD%/tools/tar/bsdtar.exe -x -f \"%CD%/storage/plugins/{$folder_name}/{$filtered_file_name}\" -C \"{$files_path}\"");
